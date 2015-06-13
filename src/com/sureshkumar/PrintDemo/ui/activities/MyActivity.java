@@ -1,7 +1,10 @@
 package com.sureshkumar.PrintDemo.ui.activities;
 
 import android.app.Activity;
-import android.content.*;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
@@ -56,7 +59,7 @@ public class MyActivity extends Activity implements PrintCompleteService {
         try {
             externalStorageDirectory = Environment.getExternalStorageDirectory().toString();
             File folder = new File(externalStorageDirectory, Constants.CONTROLLER_RX_PDF_FOLDER);
-            pdfFile = new File(folder, "Print_testing.pdf"); // Todo.. pdf file hardcoded -> use downloaded rx file here.
+            pdfFile = new File(folder, "Print_testing.pdf"); // Todo.. pdf file hardcoded.
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -135,7 +138,6 @@ public class MyActivity extends Activity implements PrintCompleteService {
             // printer configuration is not available.
             // display list of wifi available in an activity
 
-            // Todo.. wifi will be connected here..
             showWifiListActivity(Constants.REQUEST_CODE_PRINTER);
 
         } else {
@@ -147,7 +149,7 @@ public class MyActivity extends Activity implements PrintCompleteService {
             // scans nearby wifi..
             mWifiManager.startScan();
 
-            // Todo.. need to check this wifi in scan result list..
+            // checks this wifi in scan result list..
             for (int i = 0; i < mScanResults.size(); i++) {
                 if (mPrinterConfiguration.SSID.equals("\"" + mScanResults.get(i).SSID + "\"")) {
                     isPrinterAvailable = true;
@@ -159,7 +161,7 @@ public class MyActivity extends Activity implements PrintCompleteService {
                 // connect to printer wifi and show print settings dialog and continue with print flow.
                 connectToWifi(mPrinterConfiguration);
 
-                // Todo.. continue with print flow here..
+                // prints document.
                 doPrint();
 
             } else {
@@ -193,8 +195,8 @@ public class MyActivity extends Activity implements PrintCompleteService {
                 if (mCurrentPrintJob.getInfo().getState() == PrintJobInfo.STATE_COMPLETED) {
 
                     // remove that PrintJob from PrintManager.
-                    for(int i = 0; i < mPrintJobs.size(); i++){
-                        if(mPrintJobs.get(i).getId() == mCurrentPrintJob.getId()){
+                    for (int i = 0; i < mPrintJobs.size(); i++) {
+                        if (mPrintJobs.get(i).getId() == mCurrentPrintJob.getId()) {
                             mPrintJobs.remove(i);
                         }
                     }
@@ -204,11 +206,11 @@ public class MyActivity extends Activity implements PrintCompleteService {
 
                     // stops handler..
                     mPrintCompleteHandler.removeCallbacksAndMessages(null);
-                } else if(mCurrentPrintJob.getInfo().getState() == PrintJobInfo.STATE_FAILED){
+                } else if (mCurrentPrintJob.getInfo().getState() == PrintJobInfo.STATE_FAILED) {
                     switchConnection();
                     Toast.makeText(MyActivity.this, "Print Failed!", Toast.LENGTH_LONG).show();
                     mPrintCompleteHandler.removeCallbacksAndMessages(null);
-                } else if(mCurrentPrintJob.getInfo().getState() == PrintJobInfo.STATE_CANCELED){
+                } else if (mCurrentPrintJob.getInfo().getState() == PrintJobInfo.STATE_CANCELED) {
                     switchConnection();
                     Toast.makeText(MyActivity.this, "Print Cancelled!", Toast.LENGTH_LONG).show();
                     mPrintCompleteHandler.removeCallbacksAndMessages(null);
@@ -219,7 +221,7 @@ public class MyActivity extends Activity implements PrintCompleteService {
 
     }
 
-    public void switchConnection(){
+    public void switchConnection() {
         if (!isMobileDataConnection) {
             mOldWifiConfiguration = Util.getWifiConfiguration(MyActivity.this, Constants.CONTROLLER_WIFI);
 
@@ -230,7 +232,7 @@ public class MyActivity extends Activity implements PrintCompleteService {
             // scans nearby wifi.
             mWifiManager.startScan();
 
-            // Todo.. need to check this wifi in scan result list.
+            // checks this wifi in scan result list.
             for (int i = 0; i < mScanResults.size(); i++) {
                 if (mOldWifiConfiguration.SSID.equals("\"" + mScanResults.get(i).SSID + "\"")) {
                     isWifiAvailable = true;
@@ -264,18 +266,18 @@ public class MyActivity extends Activity implements PrintCompleteService {
             @Override
             public void run() {
 
-                Log.d("PrinterConnection Status",""+mPrinterConfiguration.status);
+                Log.d("PrinterConnection Status", "" + mPrinterConfiguration.status);
 
                 mPrintStartHandler.postDelayed(this, 1000);
 
-                if(mPrinterConfiguration.status == WifiConfiguration.Status.CURRENT) {
+                if (mPrinterConfiguration.status == WifiConfiguration.Status.CURRENT) {
                     if (Util.computePDFPageCount(pdfFile) > 0) {
                         printDocument(pdfFile);
                     } else {
                         Toast.makeText(MyActivity.this, "Can't print, Page count is zero.", Toast.LENGTH_LONG).show();
                     }
                     mPrintStartHandler.removeCallbacksAndMessages(null);
-                } else if(mPrinterConfiguration.status == WifiConfiguration.Status.DISABLED){
+                } else if (mPrinterConfiguration.status == WifiConfiguration.Status.DISABLED) {
                     Toast.makeText(MyActivity.this, "Failed to connect to printer!.", Toast.LENGTH_LONG).show();
                     mPrintStartHandler.removeCallbacksAndMessages(null);
                 }

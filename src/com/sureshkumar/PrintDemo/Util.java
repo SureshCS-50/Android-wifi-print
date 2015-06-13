@@ -31,6 +31,7 @@ public class Util {
 
         ConnectivityManager cm = (ConnectivityManager) mActivity.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo[] netInfo = cm.getAllNetworkInfo();
+
         for (NetworkInfo ni : netInfo) {
             if (ni.getTypeName().equalsIgnoreCase(Constants.CONTROLLER_WIFI)) {
                 if (ni.isConnected()) {

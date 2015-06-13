@@ -5,14 +5,15 @@ import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
-import android.print.*;
+import android.print.PageRange;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintDocumentInfo;
 import android.print.pdf.PrintedPdfDocument;
-import android.util.Log;
 import com.sureshkumar.PrintDemo.Constants;
 import com.sureshkumar.PrintDemo.Util;
 
 import java.io.*;
-import java.util.List;
 
 /**
  * Created by Sureshkumar on 09-06-2015.

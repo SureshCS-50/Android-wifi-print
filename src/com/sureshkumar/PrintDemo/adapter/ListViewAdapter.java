@@ -23,7 +23,7 @@ public class ListViewAdapter extends BaseAdapter {
         public String name;
         public boolean selected = false;
 
-        public ListItem(String name,boolean selected){
+        public ListItem(String name, boolean selected) {
             this.name = name;
             this.selected = selected;
         }
@@ -31,10 +31,10 @@ public class ListViewAdapter extends BaseAdapter {
 
     private ArrayList<ListItem> itemArray = new ArrayList<ListItem>();
 
-    public ListViewAdapter(Activity mActivity, String[] mItems){
+    public ListViewAdapter(Activity mActivity, String[] mItems) {
         this.mActivity = mActivity;
-        for(String name:mItems){
-            this.itemArray.add(new ListItem(name,false));
+        for (String name : mItems) {
+            this.itemArray.add(new ListItem(name, false));
         }
     }
 
@@ -62,11 +62,11 @@ public class ListViewAdapter extends BaseAdapter {
 
         mText.setText(itemArray.get(i).name);
 
-        if(itemArray.get(i).selected){
+        if (itemArray.get(i).selected) {
             mText.setTextColor(mActivity.getResources().getColor(R.color.blue));
             mImage.setColorFilter(mActivity.getResources().getColor(R.color.blue), android.graphics.PorterDuff.Mode.MULTIPLY);
             mView.setBackgroundColor(mActivity.getResources().getColor(R.color.list_item_selected));
-        } else{
+        } else {
             mText.setTextColor(mActivity.getResources().getColor(android.R.color.black));
             mImage.setColorFilter(mActivity.getResources().getColor(R.color.list_item_selected), android.graphics.PorterDuff.Mode.MULTIPLY);
             mView.setBackgroundColor(mActivity.getResources().getColor(android.R.color.white));
@@ -75,10 +75,10 @@ public class ListViewAdapter extends BaseAdapter {
         return mView;
     }
 
-    public void setSelected(int index){
+    public void setSelected(int index) {
         final String name = itemArray.get(index).name;
-        for(int i = 0; i< itemArray.size(); i++) {
-            if(i == index) {
+        for (int i = 0; i < itemArray.size(); i++) {
+            if (i == index) {
                 itemArray.set(i, new ListItem(name, true));
             } else {
                 itemArray.set(i, new ListItem(itemArray.get(i).name, false));

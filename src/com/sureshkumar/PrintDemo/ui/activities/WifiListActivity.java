@@ -200,7 +200,6 @@ public class WifiListActivity extends Activity implements View.OnClickListener {
     }
 
     private void finishActivity(WifiConfiguration mWifiConfiguration, int networkId) {
-        // Todo.. call finish() here..
         // Don't know how to get class of device -> wifi or printer..
         // for now whatever user clicks assuming that.. It is a printer.. and saving that details in shared Prefs.
 
