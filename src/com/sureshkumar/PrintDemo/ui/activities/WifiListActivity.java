@@ -11,6 +11,7 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
+import com.sureshkumar.PrintDemo.Constants;
 import com.sureshkumar.PrintDemo.R;
 import com.sureshkumar.PrintDemo.Util;
 import com.sureshkumar.PrintDemo.adapter.WifiAdapter;
@@ -207,7 +208,7 @@ public class WifiListActivity extends Activity implements View.OnClickListener {
 
         Util.savePrinterConfiguration(WifiListActivity.this, mWifiConfiguration);
         Intent intent = new Intent();
-        setResult(1001, intent);
+        setResult(Constants.RESULT_CODE_PRINTER, intent);
         finish();
     }
 

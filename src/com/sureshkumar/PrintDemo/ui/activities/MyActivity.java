@@ -257,7 +257,6 @@ public class MyActivity extends Activity implements PrintCompleteService {
         String jobName = getString(R.string.app_name) + " Document";
 
         mCurrentPrintJob = mPrintManager.print(jobName, new PrintServicesAdapter(MyActivity.this, pdfFile), null);
-
     }
 
     public void doPrint() {
@@ -268,7 +267,7 @@ public class MyActivity extends Activity implements PrintCompleteService {
 
                 Log.d("PrinterConnection Status", "" + mPrinterConfiguration.status);
 
-                mPrintStartHandler.postDelayed(this, 1000);
+                mPrintStartHandler.postDelayed(this, 3000);
 
                 if (mPrinterConfiguration.status == WifiConfiguration.Status.CURRENT) {
                     if (Util.computePDFPageCount(pdfFile) > 0) {
@@ -282,7 +281,7 @@ public class MyActivity extends Activity implements PrintCompleteService {
                     mPrintStartHandler.removeCallbacksAndMessages(null);
                 }
             }
-        }, 1000);
+        }, 3000);
     }
 
     @Override
