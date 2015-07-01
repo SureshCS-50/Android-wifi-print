@@ -21,5 +21,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.activities.WifiListActivity"/>
+        <activity android:name=".ui.activities.PrintFragmentActivity"/>
     </application>
 </manifest>

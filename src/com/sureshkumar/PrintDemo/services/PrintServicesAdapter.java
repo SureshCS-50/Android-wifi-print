@@ -1,7 +1,8 @@
 package com.sureshkumar.PrintDemo.services;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
-import android.graphics.pdf.PdfDocument;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
@@ -9,62 +10,79 @@ import android.print.PageRange;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintDocumentInfo;
-import android.print.pdf.PrintedPdfDocument;
+import android.support.v4.app.Fragment;
 import com.sureshkumar.PrintDemo.Constants;
+import com.sureshkumar.PrintDemo.ObservableSingleton;
 import com.sureshkumar.PrintDemo.Util;
+import com.sureshkumar.PrintDemo.observers.Observable;
+import com.sureshkumar.PrintDemo.observers.Observer;
 
 import java.io.*;
 
 /**
  * Created by Sureshkumar on 09-06-2015.
  */
-public class PrintServicesAdapter extends PrintDocumentAdapter {
+@TargetApi(Build.VERSION_CODES.KITKAT)
+public class PrintServicesAdapter extends PrintDocumentAdapter implements Observer {
     private Activity mActivity;
-    private int pageHeight;
-    private int pageWidth;
-    private PdfDocument myPdfDocument;
     private int totalpages = 1;
     private File pdfFile;
     private PrintCompleteService mPrintCompleteService;
+    private Fragment mFragment;
 
-    public PrintServicesAdapter(Activity mActivity, File pdfFile) {
+    private Observable mObservable;
+
+    public PrintServicesAdapter(Activity mActivity, Fragment mFragment, File pdfFile) {
         this.mActivity = mActivity;
+        this.mFragment = mFragment;
         this.pdfFile = pdfFile;
         this.totalpages = Util.computePDFPageCount(pdfFile);
-        this.mPrintCompleteService = (PrintCompleteService) mActivity;
+
+        if(mFragment!=null){
+            this.mPrintCompleteService = (PrintCompleteService) mFragment;
+        } else{
+            this.mPrintCompleteService = (PrintCompleteService) mActivity;
+        }
+
+        mObservable = ObservableSingleton.getInstance();
+        mObservable.attach(this);
     }
 
+    @TargetApi(Build.VERSION_CODES.KITKAT)
     @Override
     public void onLayout(PrintAttributes oldAttributes,
                          PrintAttributes newAttributes,
                          CancellationSignal cancellationSignal,
                          LayoutResultCallback callback,
                          Bundle metadata) {
-        myPdfDocument = new PrintedPdfDocument(mActivity, newAttributes);
 
-        pageHeight =
-                newAttributes.getMediaSize().getHeightMils() / 1000 * 72;
-        pageWidth =
-                newAttributes.getMediaSize().getWidthMils() / 1000 * 72;
+        try {
 
-        if (cancellationSignal.isCanceled()) {
-            callback.onLayoutCancelled();
-            return;
+            if (cancellationSignal.isCanceled()) {
+                callback.onLayoutCancelled();
+                return;
+            }
+
+            if (totalpages > 0) {
+                PrintDocumentInfo.Builder builder = new PrintDocumentInfo
+                        .Builder(pdfFile.getName())
+                        .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                        .setPageCount(totalpages);
+
+                PrintDocumentInfo info = builder.build();
+                callback.onLayoutFinished(info, true);
+            } else {
+                totalpages = 0;
+                callback.onLayoutFailed("Page count is zero.");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        if (totalpages > 0) {
-            PrintDocumentInfo.Builder builder = new PrintDocumentInfo
-                    .Builder(pdfFile.getName())
-                    .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
-                    .setPageCount(totalpages);
-
-            PrintDocumentInfo info = builder.build();
-            callback.onLayoutFinished(info, true);
-        } else {
-            callback.onLayoutFailed("Page count is zero.");
-        }
     }
 
+    @TargetApi(Build.VERSION_CODES.KITKAT)
     @Override
     public void onWrite(final PageRange[] pageRanges,
                         final ParcelFileDescriptor destination,
@@ -86,17 +104,19 @@ public class PrintServicesAdapter extends PrintDocumentAdapter {
 
             callback.onWriteFinished(new PageRange[]{PageRange.ALL_PAGES});
 
-
         } catch (FileNotFoundException ee) {
             //Catch exception
+            mPrintCompleteService.onMessage(Constants.PRINTER_STATUS_CANCELLED);
         } catch (Exception e) {
             //Catch exception
+            mPrintCompleteService.onMessage(Constants.PRINTER_STATUS_CANCELLED);
         } finally {
             try {
                 input.close();
                 output.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                mPrintCompleteService.onMessage(Constants.PRINTER_STATUS_CANCELLED);
             }
         }
 
@@ -112,4 +132,20 @@ public class PrintServicesAdapter extends PrintDocumentAdapter {
     public void onFinish() {
         mPrintCompleteService.onMessage(Constants.PRINTER_STATUS_COMPLETED);
     }
+
+    @Override
+    public void update() {
+        mObservable.detach(this);
+    }
+
+    @Override
+    public void updateObserver(boolean bool) {
+
+    }
+
+    @Override
+    public void updateObserverProgress(int percentage) {
+
+    }
+
 }

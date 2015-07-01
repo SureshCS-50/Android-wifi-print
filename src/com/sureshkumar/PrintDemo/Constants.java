@@ -17,6 +17,7 @@ public class Constants {
     public static final int REQUEST_CODE_PRINTER = 1000;
     public static final int REQUEST_CODE_WIFI = 999;
     public static final int RESULT_CODE_PRINTER = 1001;
+    public static final int RESULT_CODE_PRINTER_CONNECT_FAILED = 1002;
 
-    public static final String CONTROLLER_RX_PDF_FOLDER = "rx folder";
+    public static final String CONTROLLER_PDF_FOLDER = "print_demo_folder";
 }

@@ -1,20 +1,18 @@
-package com.sureshkumar.PrintDemo.ui.activities;
+package com.sureshkumar.PrintDemo.ui.fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.view.KeyEvent;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.view.*;
 import android.widget.Button;
 import android.widget.Toast;
 import com.sureshkumar.PrintDemo.Constants;
@@ -24,26 +22,35 @@ import com.sureshkumar.PrintDemo.Util;
 import com.sureshkumar.PrintDemo.observers.Observable;
 import com.sureshkumar.PrintDemo.observers.Observer;
 import com.sureshkumar.PrintDemo.services.PrintCompleteService;
+import com.sureshkumar.PrintDemo.services.PrintFragmentCommunicator;
 import com.sureshkumar.PrintDemo.services.PrintUtility;
 import com.sureshkumar.PrintDemo.services.WifiScanner;
+import com.sureshkumar.PrintDemo.ui.activities.PrintFragmentActivity;
 
 import java.io.File;
 
-public class MyActivity extends Activity implements Observer, PrintCompleteService {
+/**
+ * Created by Sureshkumar on 01-07-2015.
+ */
+public class PrintFragment extends Fragment implements PrintCompleteService, Observer, PrintFragmentCommunicator {
 
     Dialog mPrintDialog;
-    private Button mBtnPrint, mBtnPrintFromFragment, mBtnDownloadAndPrint;
+    private Button mBtnPrint, mBtnDownloadAndPrint;
     private File pdfFile;
     private String externalStorageDirectory;
+    private Activity mActivity;
+    //    print variables..
     private PrintUtility mPrintUtility;
     private WifiScanner mWifiScanner;
     private WifiManager mWifiManager;
+    //    Observable pattern..
     private Observable mObservable;
 
+    @Nullable
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        super.onCreateView(inflater, container, savedInstanceState);
+        View mView = inflater.inflate(R.layout.fragemnt_print, container, false);
 
         try {
             externalStorageDirectory = Environment.getExternalStorageDirectory().toString();
@@ -55,24 +62,23 @@ public class MyActivity extends Activity implements Observer, PrintCompleteServi
 
         mObservable = ObservableSingleton.getInstance();
 
-        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        mWifiManager = (WifiManager) mActivity.getSystemService(Context.WIFI_SERVICE);
         mWifiScanner = new WifiScanner();
-        mPrintUtility = new PrintUtility(this, mWifiManager, mWifiScanner);
+        mPrintUtility = new PrintUtility(mActivity, PrintFragment.this, mWifiManager, mWifiScanner);
 
-        mBtnPrint = (Button) findViewById(R.id.btnPrint);
-        mBtnDownloadAndPrint = (Button) findViewById(R.id.btnDownloadAndPrint);
-        mBtnPrintFromFragment = (Button) findViewById(R.id.btnNext);
+        mBtnPrint = (Button) mView.findViewById(R.id.btnPrint);
+        mBtnDownloadAndPrint = (Button) mView.findViewById(R.id.btnDownloadAndPrint);
 
         mBtnDownloadAndPrint.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 mPrintDialog.show();
-                mObservable.attach(MyActivity.this);
-                if (Util.hasConnection(MyActivity.this)) {
+                mObservable.attach(PrintFragment.this);
+                if (Util.hasConnection(mActivity)) {
                     mPrintUtility.downloadAndPrint("fileUrl", "fileName with extension");
                 } else {
                     mObservable.notifyObserver(true);
-                    Toast.makeText(MyActivity.this, "Please connect to Internet", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(mActivity, "Please connect to internet", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -80,31 +86,23 @@ public class MyActivity extends Activity implements Observer, PrintCompleteServi
         mBtnPrint.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mPrintDialog.show();
-                mObservable.attach(MyActivity.this);
+                mObservable.attach(PrintFragment.this);
                 mPrintUtility.print(pdfFile);
             }
         });
 
-        mBtnPrintFromFragment.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent iNext = new Intent(MyActivity.this, PrintFragmentActivity.class);
-                startActivity(iNext);
-            }
-        });
-
         initPrintDialog();
+
+        return mView;
     }
 
     private void initPrintDialog() {
-        mPrintDialog = new Dialog(this);
+        mPrintDialog = new Dialog(mActivity);
         mPrintDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         Window window = mPrintDialog.getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
         mPrintDialog.setContentView(R.layout.dialog_progressbar);
-
 
         mPrintDialog.setCancelable(true);
         mPrintDialog.setCanceledOnTouchOutside(false);
@@ -113,7 +111,7 @@ public class MyActivity extends Activity implements Observer, PrintCompleteServi
             @Override
             public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
                 if (keyCode == KeyEvent.KEYCODE_BACK) {
-                    AlertDialog.Builder alert = new AlertDialog.Builder(MyActivity.this);
+                    AlertDialog.Builder alert = new AlertDialog.Builder(mActivity);
 
                     alert.setMessage("Do you want to cancel printing?");
 
@@ -122,6 +120,7 @@ public class MyActivity extends Activity implements Observer, PrintCompleteServi
                         public void onClick(DialogInterface dialogInterface, int i) {
                             dialogInterface.dismiss();
                             mPrintUtility.onPrintCancelled();
+
                         }
                     });
 
@@ -141,11 +140,18 @@ public class MyActivity extends Activity implements Observer, PrintCompleteServi
     }
 
     @Override
-    protected void onResume() {
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        this.mActivity = activity;
+        ((PrintFragmentActivity) activity).mPrintFragmentCommunicator = this;
+    }
+
+    @Override
+    public void onResume() {
         super.onResume();
         try {
             // This will give list of wifi available nearby.
-            registerReceiver(mWifiScanner, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+            mActivity.registerReceiver(mWifiScanner, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
             mWifiManager.startScan();
             mPrintUtility.setScanResults(mWifiScanner.getScanResults());
         } catch (Exception e) {
@@ -154,69 +160,25 @@ public class MyActivity extends Activity implements Observer, PrintCompleteServi
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         try {
-            unregisterReceiver(mWifiScanner);
+            mActivity.unregisterReceiver(mWifiScanner);
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == Constants.REQUEST_CODE_PRINTER && resultCode == Constants.RESULT_CODE_PRINTER) {
-
-            // stores printer configuration and prints..
-            if (!mPrintDialog.isShowing())
-                mPrintDialog.show();
-
-            mPrintUtility.getPrinterConfigAndPrint();
-
-        } else if (requestCode == Constants.REQUEST_CODE_WIFI && resultCode == Constants.RESULT_CODE_PRINTER) {
-            // after switch back to wifi..
-
-        } else if (requestCode == Constants.REQUEST_CODE_PRINTER && resultCode == Constants.RESULT_CODE_PRINTER_CONNECT_FAILED) {
-
-            if (!mPrintDialog.isShowing())
-                mPrintDialog.show();
-
-            mPrintUtility.onPrintCancelled();
-
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        try {
-            if (mPrintDialog != null && mPrintDialog.isShowing()) {
-
-            } else {
-                finish();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void onMessage(int status) {
-        // get List of PrintJob from PrintManager
-        mPrintUtility.completePrintJob();
-    }
-
-    @Override
-    public void respondAfterWifiSwitch() {
-        // code after network switch completes.
     }
 
     @Override
     public void update() {
-        if (mPrintDialog != null && mPrintDialog.isShowing()) {
-            mPrintDialog.dismiss();
+        try {
+            if (mPrintDialog != null && mPrintDialog.isShowing()) {
+                mPrintDialog.dismiss();
+            }
+            mObservable.detach(this);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        mObservable.detach(this);
     }
 
     @Override
@@ -233,4 +195,38 @@ public class MyActivity extends Activity implements Observer, PrintCompleteServi
 
     }
 
+    @Override
+    public void onMessage(int status) {
+        mPrintUtility.completePrintJob();
+    }
+
+    @Override
+    public void respondAfterWifiSwitch() {
+
+    }
+
+    @Override
+    public void respondOnPrintComplete() {
+
+    }
+
+    @Override
+    public void respondOnPrinterSelect() {
+        try {
+            if (!mPrintDialog.isShowing())
+                mPrintDialog.show();
+
+            mPrintUtility.getPrinterConfigAndPrint();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void respondOnPrinterSelectCancelled() {
+        if (!mPrintDialog.isShowing())
+            mPrintDialog.show();
+
+        mPrintUtility.onPrintCancelled();
+    }
 }
